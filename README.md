@@ -1,71 +1,40 @@
-# COMP647 Machine Learning Project - Sungmin Lee
+# Car Insurance Claim Prediction
+COMP647 Machine Learning Assignment  
+Student: Sungmin Lee (1163957)
+
+## Project Background
+As a financial supporter at Allied Financial in Christchurch, New Zealand, I handle car insurance claims daily. When customers experience accidents, they call me to help process their claims - I prepare documentation and submit it to insurance companies on their behalf, then follow up throughout the process.
+
+This project applies machine learning to real business challenges I face: predicting which clients are likely to file claims and improving our proactive customer service approach.
 
 ## Project Overview
-This repository contains the weekly assignments and final project for COMP647 Machine Learning course.
+Predict whether a car insurance policyholder will file a claim using machine learning classification models, with insights from real-world insurance claim processing experience.
 
-## Project Structure
-```
-COMP647Project_SungminLee/
-├── data/                   # Dataset storage
-├── notebooks/              # Jupyter notebooks for analysis
-├── src/                    # Source code modules
-├── models/                 # Trained model files
-├── results/                # Output results and visualizations
-├── docs/                   # Documentation
-├── requirements.txt        # Python dependencies
-└── README.md              # Project documentation
-```
+## Dataset
+**Source**: Kaggle - Car Insurance Claim Prediction  
+**URL**: https://www.kaggle.com/datasets/ifteshanajnin/carinsuranceclaimprediction-classification  
+**Files**: train.csv, test.csv, sample_submission.csv
 
-## Setup Instructions
+## Project Files
+- `src/main.py` - Main analysis pipeline
+- `src/data_loader.py` - Data loading and basic inspection
+- `src/preprocessing.py` - Data preprocessing (missing values, outliers, encoding)
+- `src/eda_analysis.py` - Exploratory data analysis
+- `data/` - Dataset folder (add train.csv here)
 
-### 1. Environment Setup
-```bash
-# Create conda environment
-conda create --name ai_ml_env python=3.9
+## How to Run
+1. Download dataset from Kaggle and place train.csv in `data/` folder
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run analysis: `python src/main.py`
 
-# Activate environment
-conda activate ai_ml_env
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Jupyter Notebook Setup
-```bash
-# Install kernel for the environment
-python -m ipykernel install --user --name=ai_ml_env
-
-# Launch Jupyter
-jupyter notebook
-```
-
-## Weekly Progress
-
-- [x] **Week 01**: Local environment setup, remote repository creation
-- [ ] **Week 02**: Dataset selection and justification
-- [ ] **Week 03**: Data preprocessing
-- [ ] **Week 04**: Feature selection/extraction
-- [ ] **Week 05**: Model selection (supervised/unsupervised)
-- [ ] **Week 06**: Parameter optimization
-- [ ] **Week 07**: XAI (Explainable AI) algorithms
-- [ ] **Week 08**: Time Series algorithms
-- [ ] **Week 09**: Image Data algorithms
-- [ ] **Week 10-12**: Project evaluation and finalization
-
-## Dataset Information
-*To be updated after dataset selection*
-
-## Technologies Used
-- **Python 3.9+**
-- **Pandas** - Data manipulation and analysis
-- **NumPy** - Numerical computing
-- **Scikit-learn** - Machine learning library
-- **Matplotlib/Seaborn** - Data visualization
-- **Jupyter Notebook** - Interactive development
-- **SHAP/LIME** - Model interpretability
-- **OpenCV** - Image processing
+## Analysis Steps
+1. **Data Loading** - Load and inspect the insurance dataset
+2. **Data Preprocessing** - Handle missing values, outliers, and encoding
+3. **Exploratory Data Analysis** - Analyze relationships between features and target
+4. **Feature Analysis** - Identify important predictors for insurance claims
 
 ## Author
 **Sungmin Lee**  
-Student Registration Number: [Your Number]  
-Course: COMP647 - Machine Learning
+Student Registration Number: 1163957  
+Course: COMP647 - Machine Learning  
+GitHub Repository: https://github.com/Alex-Lee-1163957/COMP647Project_SungminLee

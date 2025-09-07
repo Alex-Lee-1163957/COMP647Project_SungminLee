@@ -2,504 +2,306 @@
 Exploratory Data Analysis (EDA) Module
 Course: COMP647 - Machine Learning
 Student: Sungmin Lee (1163957)
-Purpose: Investigate correlations and potential relationships among features
+Purpose: Investigate correlations and relationships among features using lab session methods
 """
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy.stats import chi2_contingency, pearsonr, spearmanr
-import warnings
-warnings.filterwarnings('ignore')
+from pandas.plotting import scatter_matrix
 
 class EDAAnalyzer:
-    """Class to perform comprehensive exploratory data analysis"""
+    """
+    Class to perform exploratory data analysis using methods from lab sessions
+    """
     
-    def __init__(self, figsize=(12, 8)):
+    def __init__(self, figsize=(10, 6)):
         """
-        Initialize EDA Analyzer
-        Args:
-            figsize (tuple): Default figure size for plots
+        Initialize EDA Analyzer with basic matplotlib settings
         """
         self.figsize = figsize
-        # Set visualization style for better appearance
-        plt.style.use('default')
-        sns.set_palette("husl")
+        plt.rcParams['figure.figsize'] = figsize
+        plt.rcParams['font.size'] = 10
         
-    def analyze_target_variable(self, data, target_column):
+    def basic_data_overview(self, data, target_column):
         """
-        Analyze the target variable distribution and characteristics
+        Get basic overview of the dataset using pandas methods from lab sessions
         
-        EXPLANATION: Understanding the target variable is crucial for:
-        - Identifying class imbalance issues
-        - Choosing appropriate evaluation metrics
-        - Understanding the business problem context
-        
-        Args:
-            data (pd.DataFrame): Input dataset
-            target_column (str): Name of target column
+        This follows the standard approach shown in class:
+        1. Check data structure with info()
+        2. Get statistical summary with describe() 
+        3. Look at target variable distribution
         """
-        print(f"\nAnalyzing target variable: {target_column}")
+        print("="*60)
+        print("BASIC DATA OVERVIEW")
+        print("="*60)
         
-        if target_column not in data.columns:
-            print(f"Error: Column '{target_column}' not found in the dataset!")
-            return
+        # Basic dataset information - this is always the first step in EDA
+        print(f"Dataset shape: {data.shape}")
+        print(f"Number of rows: {data.shape[0]:,}")
+        print(f"Number of columns: {data.shape[1]}")
         
-        target_data = data[target_column]
+        print(f"\nData types and missing values:")
+        print(data.info())
         
-        # BASIC STATISTICS
-        print(f"Target variable: {target_column}")
-        print(f"Data type: {target_data.dtype}")
-        print(f"Total records: {len(target_data)}")
-        print(f"Missing values: {target_data.isnull().sum()}")
+        print(f"\nBasic statistical summary:")
+        print(data.describe())
         
-        # VALUE DISTRIBUTION
-        print(f"\nValue Distribution:")
-        value_counts = target_data.value_counts()
-        for value, count in value_counts.items():
-            percentage = (count / len(target_data)) * 100
-            print(f"  {value}: {count} ({percentage:.1f}%)")
-        
-        # CLASS BALANCE ANALYSIS
-        # Important for classification problems - imbalanced classes can bias models
-        if len(value_counts) == 2:
-            minority_class = value_counts.min()
-            majority_class = value_counts.max()
-            imbalance_ratio = majority_class / minority_class
+        # Target variable analysis
+        if target_column in data.columns:
+            print(f"\nTarget variable '{target_column}' distribution:")
+            target_counts = data[target_column].value_counts()
+            print(target_counts)
             
-            print(f"\nClass Balance Analysis:")
-            print(f"Majority class: {majority_class} samples")
-            print(f"Minority class: {minority_class} samples")
-            print(f"Imbalance ratio: {imbalance_ratio:.2f}:1")
-            
-            if imbalance_ratio > 3:
-                print("Warning: Classes are imbalanced!")
-                print("This might affect model performance - consider resampling techniques")
-        
-        # VISUALIZATION
-        fig, axes = plt.subplots(1, 2, figsize=self.figsize)
-        
-        # Count plot
-        sns.countplot(data=data, x=target_column, ax=axes[0])
-        axes[0].set_title(f'Distribution of {target_column}')
-        axes[0].set_xlabel(target_column)
-        axes[0].set_ylabel('Count')
-        
-        # Pie chart
-        axes[1].pie(value_counts.values, labels=value_counts.index, autopct='%1.1f%%')
-        axes[1].set_title(f'Proportion of {target_column}')
-        
-        plt.tight_layout()
-        plt.show()
+            # Calculate percentages like we learned in class
+            target_percentages = data[target_column].value_counts(normalize=True) * 100
+            print(f"\nTarget variable percentages:")
+            for value, percentage in target_percentages.items():
+                print(f"  {value}: {percentage:.1f}%")
     
-    def analyze_numerical_features(self, data, target_column=None):
+    def create_histograms(self, data, target_column=None):
         """
-        Analyze numerical features and their relationships
+        Create histograms for all numerical features
         
-        EXPLANATION: Numerical feature analysis helps identify:
-        - Distribution patterns (normal, skewed, bimodal)
-        - Potential outliers and anomalies  
-        - Relationships with target variable
-        - Features that might need transformation
-        
-        Args:
-            data (pd.DataFrame): Input dataset
-            target_column (str): Target variable for relationship analysis
+        This is one of the first visualization techniques we learned in lab sessions.
+        Histograms help us understand the distribution of each feature.
         """
-        print(f"\nAnalyzing numerical features")
+        print(f"\nCreating histograms for numerical features...")
         
-        # Get numerical columns
-        numerical_cols = data.select_dtypes(include=[np.number]).columns.tolist()
+        # Get numerical columns only
+        numerical_cols = data.select_dtypes(include=[np.number]).columns
         if target_column and target_column in numerical_cols:
-            numerical_cols.remove(target_column)
+            numerical_cols = numerical_cols.drop(target_column)
         
         if len(numerical_cols) == 0:
-            print("No numerical features found in the dataset.")
+            print("No numerical features found for histograms.")
             return
         
-        print(f"Analyzing {len(numerical_cols)} numerical features:")
-        print(f"Features: {numerical_cols}")
-        
-        # DESCRIPTIVE STATISTICS
-        print(f"\nDescriptive Statistics:")
-        print(data[numerical_cols].describe())
-        
-        # DISTRIBUTION ANALYSIS
-        # Create distribution plots for each numerical feature
-        n_cols = min(3, len(numerical_cols))
-        n_rows = (len(numerical_cols) + n_cols - 1) // n_cols
-        
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows))
-        if n_rows == 1:
-            axes = [axes] if n_cols == 1 else axes
-        else:
-            axes = axes.flatten()
-        
-        for i, col in enumerate(numerical_cols):
-            # HISTOGRAM WITH DENSITY CURVE
-            # Shows distribution shape: normal, skewed, multimodal
-            sns.histplot(data[col], kde=True, ax=axes[i])
-            axes[i].set_title(f'Distribution of {col}')
-            axes[i].set_xlabel(col)
-            axes[i].set_ylabel('Frequency')
-            
-            # Add statistics text
-            mean_val = data[col].mean()
-            median_val = data[col].median()
-            std_val = data[col].std()
-            skewness = data[col].skew()
-            
-            # Interpretation of skewness:
-            # |skew| < 0.5: approximately symmetric
-            # 0.5 < |skew| < 1: moderately skewed
-            # |skew| > 1: highly skewed
-            axes[i].axvline(mean_val, color='red', linestyle='--', label=f'Mean: {mean_val:.2f}')
-            axes[i].axvline(median_val, color='blue', linestyle='--', label=f'Median: {median_val:.2f}')
-            axes[i].legend()
-            
-            print(f"\n{col} Statistics:")
-            print(f"  Mean: {mean_val:.2f}, Median: {median_val:.2f}")
-            print(f"  Std: {std_val:.2f}, Skewness: {skewness:.2f}")
-            
-            # Skewness interpretation
-            if abs(skewness) < 0.5:
-                skew_desc = "approximately symmetric"
-            elif abs(skewness) < 1:
-                skew_desc = "moderately skewed"
-            else:
-                skew_desc = "highly skewed"
-            print(f"  Distribution: {skew_desc}")
-        
-        # Remove empty subplots
-        for i in range(len(numerical_cols), len(axes)):
-            fig.delaxes(axes[i])
-        
+        # Create histograms using pandas hist() method as shown in class
+        # This creates a subplot for each numerical column automatically
+        data[numerical_cols].hist(bins=30, figsize=(15, 10))
+        plt.suptitle('Distribution of Numerical Features', fontsize=16)
         plt.tight_layout()
         plt.show()
         
-        # CORRELATION WITH TARGET (if available)
-        if target_column and target_column in data.columns:
-            self._analyze_numerical_target_relationships(data, numerical_cols, target_column)
+        print(f"Created histograms for {len(numerical_cols)} numerical features")
     
-    def _analyze_numerical_target_relationships(self, data, numerical_cols, target_column):
+    def analyze_categorical_features(self, data, target_column=None):
         """
-        Analyze relationships between numerical features and target variable
+        Analyze categorical features using value_counts() and bar plots
         
-        Args:
-            data (pd.DataFrame): Input dataset
-            numerical_cols (list): List of numerical column names
-            target_column (str): Target variable name
+        This follows the approach from lab sessions for categorical data exploration
         """
-        print(f"\n=== NUMERICAL FEATURES vs TARGET ANALYSIS ===")
+        print(f"\nAnalyzing categorical features...")
         
-        # Calculate correlations with target variable
-        correlations = []
-        for col in numerical_cols:
-            try:
-                # Use appropriate correlation method based on target type
-                if data[target_column].dtype in ['object', 'category']:
-                    # For categorical target, use point-biserial correlation
-                    # Convert target to numerical for correlation calculation
-                    target_numeric = pd.Categorical(data[target_column]).codes
-                    corr, p_value = pearsonr(data[col].fillna(0), target_numeric)
-                else:
-                    # For numerical target, use Pearson correlation
-                    corr, p_value = pearsonr(data[col].fillna(0), data[target_column].fillna(0))
-                
-                correlations.append({
-                    'feature': col,
-                    'correlation': corr,
-                    'p_value': p_value,
-                    'significance': 'Significant' if p_value < 0.05 else 'Not Significant'
-                })
-            except:
-                correlations.append({
-                    'feature': col,
-                    'correlation': np.nan,
-                    'p_value': np.nan,
-                    'significance': 'Error'
-                })
+        # Get categorical columns
+        categorical_cols = data.select_dtypes(include=['object']).columns
+        if target_column and target_column in categorical_cols:
+            categorical_cols = categorical_cols.drop(target_column)
         
-        # Display correlation results
-        corr_df = pd.DataFrame(correlations).sort_values('correlation', key=abs, ascending=False)
-        print("\nCorrelation with Target Variable:")
-        print(corr_df.to_string(index=False))
+        if len(categorical_cols) == 0:
+            print("No categorical features found.")
+            return
         
-        # INTERPRETATION GUIDE
-        print(f"\nCorrelation Interpretation Guide:")
-        print(f"  |r| > 0.7: Strong relationship")
-        print(f"  0.3 < |r| < 0.7: Moderate relationship") 
-        print(f"  |r| < 0.3: Weak relationship")
-        print(f"  p < 0.05: Statistically significant")
+        print(f"Found {len(categorical_cols)} categorical features: {list(categorical_cols)}")
         
-        # BOX PLOTS for categorical target
-        if data[target_column].dtype in ['object', 'category']:
-            n_cols = min(3, len(numerical_cols))
-            n_rows = (len(numerical_cols) + n_cols - 1) // n_cols
+        # Analyze each categorical feature
+        for col in categorical_cols:
+            print(f"\n--- {col} ---")
             
-            fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 5*n_rows))
+            # Use value_counts() as taught in class
+            value_counts = data[col].value_counts()
+            print(f"Number of unique values: {data[col].nunique()}")
+            print("Value distribution:")
+            
+            # Show top 10 values to avoid cluttering
+            top_values = value_counts.head(10)
+            for value, count in top_values.items():
+                percentage = (count / len(data)) * 100
+                print(f"  {value}: {count} ({percentage:.1f}%)")
+            
+            if len(value_counts) > 10:
+                print(f"  ... and {len(value_counts) - 10} more categories")
+        
+        # Create bar plots for categorical features
+        n_categorical = len(categorical_cols)
+        if n_categorical > 0:
+            # Calculate subplot dimensions
+            n_cols = min(2, n_categorical)
+            n_rows = (n_categorical + n_cols - 1) // n_cols
+            
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 4*n_rows))
             if n_rows == 1:
                 axes = [axes] if n_cols == 1 else axes
             else:
                 axes = axes.flatten()
             
-            for i, col in enumerate(numerical_cols):
-                # Box plot shows distribution differences between target classes
-                sns.boxplot(data=data, x=target_column, y=col, ax=axes[i])
-                axes[i].set_title(f'{col} by {target_column}')
-                axes[i].tick_params(axis='x', rotation=45)
+            for i, col in enumerate(categorical_cols):
+                # Show only top 10 categories to keep plots readable
+                top_categories = data[col].value_counts().head(10)
+                
+                # Create bar plot using pandas plot.bar() as shown in class
+                top_categories.plot.bar(ax=axes[i], rot=45)
+                axes[i].set_title(f'{col} Distribution')
+                axes[i].set_ylabel('Count')
             
             # Remove empty subplots
-            for i in range(len(numerical_cols), len(axes)):
+            for i in range(n_categorical, len(axes)):
                 fig.delaxes(axes[i])
             
             plt.tight_layout()
             plt.show()
     
-    def analyze_categorical_features(self, data, target_column=None):
+    def correlation_analysis(self, data, target_column=None):
         """
-        Analyze categorical features and their relationships
+        Perform correlation analysis using pandas corr() method from lab sessions
         
-        EXPLANATION: Categorical feature analysis reveals:
-        - Category distributions and frequencies
-        - Relationships between categorical variables
-        - Association with target variable (Chi-square tests)
-        - Potential categories for grouping/encoding
-        
-        Args:
-            data (pd.DataFrame): Input dataset
-            target_column (str): Target variable for relationship analysis
+        This is a key technique we learned for understanding relationships between features
         """
-        print(f"\n=== CATEGORICAL FEATURES ANALYSIS ===")
+        print(f"\nPerforming correlation analysis...")
         
-        # Get categorical columns
-        categorical_cols = data.select_dtypes(include=['object', 'category']).columns.tolist()
-        if target_column and target_column in categorical_cols:
-            categorical_cols.remove(target_column)
-        
-        if len(categorical_cols) == 0:
-            print("No categorical features found!")
-            return
-        
-        print(f"Analyzing {len(categorical_cols)} categorical features:")
-        print(f"Features: {categorical_cols}")
-        
-        # CATEGORY DISTRIBUTION ANALYSIS
-        for col in categorical_cols:
-            print(f"\n--- {col} Analysis ---")
-            
-            # Basic statistics
-            unique_count = data[col].nunique()
-            total_count = len(data[col])
-            missing_count = data[col].isnull().sum()
-            
-            print(f"Unique categories: {unique_count}")
-            print(f"Missing values: {missing_count}")
-            
-            # Value counts and percentages
-            value_counts = data[col].value_counts()
-            print(f"Category distribution:")
-            for category, count in value_counts.head(10).items():  # Show top 10
-                percentage = (count / total_count) * 100
-                print(f"  {category}: {count} ({percentage:.1f}%)")
-            
-            if len(value_counts) > 10:
-                print(f"  ... and {len(value_counts) - 10} more categories")
-            
-            # HIGH CARDINALITY WARNING
-            # High cardinality can cause issues with encoding and model performance
-            if unique_count > 20:
-                print(f"  ⚠️  HIGH CARDINALITY DETECTED ({unique_count} categories)")
-                print(f"  Consider: grouping rare categories, target encoding, or dimensionality reduction")
-        
-        # VISUALIZATION
-        # Create bar plots for categorical features
-        n_cols = min(2, len(categorical_cols))
-        n_rows = (len(categorical_cols) + n_cols - 1) // n_cols
-        
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 6*n_rows))
-        if n_rows == 1:
-            axes = [axes] if n_cols == 1 else axes
-        else:
-            axes = axes.flatten()
-        
-        for i, col in enumerate(categorical_cols):
-            # Show only top categories to avoid cluttered plots
-            top_categories = data[col].value_counts().head(15)
-            
-            sns.barplot(x=top_categories.values, y=top_categories.index, ax=axes[i])
-            axes[i].set_title(f'Distribution of {col}')
-            axes[i].set_xlabel('Count')
-            axes[i].set_ylabel(col)
-        
-        # Remove empty subplots
-        for i in range(len(categorical_cols), len(axes)):
-            fig.delaxes(axes[i])
-        
-        plt.tight_layout()
-        plt.show()
-        
-        # CATEGORICAL-TARGET RELATIONSHIPS
-        if target_column and target_column in data.columns:
-            self._analyze_categorical_target_relationships(data, categorical_cols, target_column)
-    
-    def _analyze_categorical_target_relationships(self, data, categorical_cols, target_column):
-        """
-        Analyze relationships between categorical features and target variable
-        
-        Args:
-            data (pd.DataFrame): Input dataset  
-            categorical_cols (list): List of categorical column names
-            target_column (str): Target variable name
-        """
-        print(f"\n=== CATEGORICAL FEATURES vs TARGET ANALYSIS ===")
-        
-        chi_square_results = []
-        
-        for col in categorical_cols:
-            try:
-                # CHI-SQUARE TEST OF INDEPENDENCE
-                # Tests whether two categorical variables are independent
-                # H0: Variables are independent (no relationship)
-                # H1: Variables are dependent (relationship exists)
-                
-                # Create contingency table
-                contingency_table = pd.crosstab(data[col], data[target_column])
-                
-                # Perform chi-square test
-                chi2, p_value, dof, expected = chi2_contingency(contingency_table)
-                
-                # Calculate effect size (Cramér's V)
-                # Cramér's V ranges from 0 (no association) to 1 (perfect association)
-                n = contingency_table.sum().sum()
-                cramers_v = np.sqrt(chi2 / (n * (min(contingency_table.shape) - 1)))
-                
-                chi_square_results.append({
-                    'feature': col,
-                    'chi_square': chi2,
-                    'p_value': p_value,
-                    'cramers_v': cramers_v,
-                    'significance': 'Significant' if p_value < 0.05 else 'Not Significant',
-                    'effect_size': 'Large' if cramers_v > 0.5 else 'Medium' if cramers_v > 0.3 else 'Small'
-                })
-                
-                print(f"\n{col} vs {target_column}:")
-                print(f"  Chi-square: {chi2:.4f}")
-                print(f"  p-value: {p_value:.4f}")
-                print(f"  Cramér's V: {cramers_v:.4f}")
-                print(f"  Relationship: {chi_square_results[-1]['significance']} ({chi_square_results[-1]['effect_size']} effect)")
-                
-            except Exception as e:
-                print(f"\n{col} vs {target_column}: Error in analysis ({str(e)})")
-                chi_square_results.append({
-                    'feature': col,
-                    'chi_square': np.nan,
-                    'p_value': np.nan,
-                    'cramers_v': np.nan,
-                    'significance': 'Error',
-                    'effect_size': 'Error'
-                })
-        
-        # Summary table
-        if chi_square_results:
-            chi_df = pd.DataFrame(chi_square_results).sort_values('cramers_v', ascending=False)
-            print(f"\nCategorical Features Relationship Summary:")
-            print(chi_df.to_string(index=False))
-            
-            print(f"\nInterpretation Guide:")
-            print(f"  p < 0.05: Statistically significant relationship")
-            print(f"  Cramér's V > 0.5: Large effect size")
-            print(f"  Cramér's V 0.3-0.5: Medium effect size")
-            print(f"  Cramér's V < 0.3: Small effect size")
-    
-    def create_correlation_matrix(self, data, target_column=None):
-        """
-        Create and visualize correlation matrix for numerical features
-        
-        EXPLANATION: Correlation matrix reveals:
-        - Linear relationships between numerical variables
-        - Potential multicollinearity issues
-        - Feature redundancy
-        - Important predictive relationships
-        
-        Args:
-            data (pd.DataFrame): Input dataset
-            target_column (str): Target variable to highlight
-        """
-        print(f"\n=== CORRELATION MATRIX ANALYSIS ===")
-        
-        # Get numerical columns
-        numerical_cols = data.select_dtypes(include=[np.number]).columns.tolist()
+        # Get numerical columns for correlation analysis
+        numerical_cols = data.select_dtypes(include=[np.number]).columns
         
         if len(numerical_cols) < 2:
-            print("Need at least 2 numerical features for correlation analysis!")
+            print("Need at least 2 numerical features for correlation analysis.")
             return
         
-        # Calculate correlation matrix
-        correlation_matrix = data[numerical_cols].corr()
+        # Calculate correlation matrix using pandas corr() as taught in class
+        corr_matrix = data[numerical_cols].corr()
         
-        print(f"Correlation matrix for {len(numerical_cols)} numerical features")
+        print(f"Correlation matrix for {len(numerical_cols)} numerical features:")
+        print(corr_matrix.round(3))
         
-        # VISUALIZATION
-        plt.figure(figsize=(12, 10))
+        # If we have a target variable, show correlations with target
+        if target_column and target_column in numerical_cols:
+            print(f"\nCorrelations with target variable '{target_column}':")
+            target_correlations = corr_matrix[target_column].drop(target_column)
+            
+            # Sort by absolute correlation value to see strongest relationships
+            target_correlations_sorted = target_correlations.abs().sort_values(ascending=False)
+            
+            for feature in target_correlations_sorted.index:
+                corr_value = target_correlations[feature]
+                print(f"  {feature}: {corr_value:.3f}")
         
-        # Create heatmap with annotations
-        mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))  # Mask upper triangle
-        sns.heatmap(correlation_matrix, 
-                   mask=mask,
-                   annot=True, 
-                   cmap='RdYlBu_r', 
-                   center=0,
-                   square=True,
-                   fmt='.2f',
-                   cbar_kws={'label': 'Correlation Coefficient'})
+        # Create correlation heatmap using matplotlib
+        plt.figure(figsize=(10, 8))
+        plt.imshow(corr_matrix, cmap='coolwarm', aspect='auto')
+        plt.colorbar(label='Correlation Coefficient')
         
-        plt.title('Correlation Matrix of Numerical Features')
+        # Add feature names to axes
+        plt.xticks(range(len(corr_matrix.columns)), corr_matrix.columns, rotation=45)
+        plt.yticks(range(len(corr_matrix.columns)), corr_matrix.columns)
+        plt.title('Correlation Matrix Heatmap')
+        
+        # Add correlation values to the plot
+        for i in range(len(corr_matrix.columns)):
+            for j in range(len(corr_matrix.columns)):
+                plt.text(j, i, f'{corr_matrix.iloc[i, j]:.2f}', 
+                        ha='center', va='center', color='black', fontsize=8)
+        
         plt.tight_layout()
         plt.show()
+    
+    def scatter_matrix_analysis(self, data, target_column=None):
+        """
+        Create scatter matrix using pandas scatter_matrix as shown in lab sessions
         
-        # MULTICOLLINEARITY ANALYSIS
-        # High correlations (|r| > 0.8) may indicate multicollinearity
-        print(f"\nMulticollinearity Analysis:")
-        high_corr_pairs = []
+        This is an important visualization technique we learned for seeing 
+        relationships between multiple numerical features at once
+        """
+        print(f"\nCreating scatter matrix...")
         
-        for i in range(len(correlation_matrix.columns)):
-            for j in range(i+1, len(correlation_matrix.columns)):
-                corr_value = correlation_matrix.iloc[i, j]
-                if abs(corr_value) > 0.8:
-                    high_corr_pairs.append({
-                        'feature_1': correlation_matrix.columns[i],
-                        'feature_2': correlation_matrix.columns[j],
-                        'correlation': corr_value
-                    })
+        # Get numerical columns
+        numerical_cols = data.select_dtypes(include=[np.number]).columns
         
-        if high_corr_pairs:
-            print(f"⚠️  HIGH CORRELATIONS DETECTED (|r| > 0.8):")
-            for pair in high_corr_pairs:
-                print(f"  {pair['feature_1']} ↔ {pair['feature_2']}: {pair['correlation']:.3f}")
-            print(f"Consider: removing redundant features or using PCA")
-        else:
-            print(f"✅ No severe multicollinearity detected")
-        
-        # TARGET CORRELATIONS (if available)
+        # Select most important features for scatter matrix (to keep it readable)
+        # Include target column if it's numerical
         if target_column and target_column in numerical_cols:
-            print(f"\nCorrelations with Target Variable ({target_column}):")
-            target_corrs = correlation_matrix[target_column].drop(target_column).sort_values(key=abs, ascending=False)
+            # Put target column first, then select other important features
+            features_for_scatter = [target_column]
+            other_features = [col for col in numerical_cols if col != target_column]
             
-            for feature, corr in target_corrs.items():
-                strength = "Strong" if abs(corr) > 0.7 else "Moderate" if abs(corr) > 0.3 else "Weak"
-                print(f"  {feature}: {corr:.3f} ({strength})")
+            # Add up to 4 more features to keep the plot manageable
+            features_for_scatter.extend(other_features[:4])
+        else:
+            # Just take first 5 numerical features
+            features_for_scatter = numerical_cols[:5].tolist()
+        
+        if len(features_for_scatter) < 2:
+            print("Need at least 2 numerical features for scatter matrix.")
+            return
+        
+        print(f"Creating scatter matrix for features: {features_for_scatter}")
+        
+        # Create scatter matrix using pandas function as taught in class
+        scatter_matrix(data[features_for_scatter], figsize=(12, 10), alpha=0.6)
+        plt.suptitle('Scatter Matrix of Key Features', fontsize=16)
+        plt.tight_layout()
+        plt.show()
+    
+    def feature_vs_target_analysis(self, data, target_column):
+        """
+        Analyze how each feature relates to the target variable
+        
+        This helps us understand which features might be most important for prediction
+        """
+        if target_column not in data.columns:
+            print(f"Target column '{target_column}' not found in dataset.")
+            return
+        
+        print(f"\nAnalyzing features vs target variable '{target_column}'...")
+        
+        # For numerical target, we can look at correlations
+        if data[target_column].dtype in ['int64', 'float64']:
+            print("Target is numerical - analyzing correlations:")
+            
+            numerical_features = data.select_dtypes(include=[np.number]).columns
+            numerical_features = numerical_features.drop(target_column)
+            
+            correlations = []
+            for feature in numerical_features:
+                corr = data[feature].corr(data[target_column])
+                correlations.append((feature, corr))
+            
+            # Sort by absolute correlation
+            correlations.sort(key=lambda x: abs(x[1]), reverse=True)
+            
+            print("Features ranked by correlation with target:")
+            for feature, corr in correlations:
+                print(f"  {feature}: {corr:.3f}")
+        
+        # For categorical target, show distribution differences
+        else:
+            print("Target is categorical - analyzing distributions:")
+            
+            # Get unique target values
+            target_values = data[target_column].unique()
+            print(f"Target has {len(target_values)} categories: {target_values}")
+            
+            # For each numerical feature, show basic stats by target category
+            numerical_features = data.select_dtypes(include=[np.number]).columns
+            
+            for feature in numerical_features[:3]:  # Show first 3 to avoid too much output
+                print(f"\n{feature} by {target_column}:")
+                feature_by_target = data.groupby(target_column)[feature].agg(['mean', 'std', 'count'])
+                print(feature_by_target.round(2))
 
 
 def main():
-    """Main function to demonstrate EDA analysis"""
+    """
+    Main function to demonstrate EDA analysis using lab session methods
+    """
     from data_loader import DataLoader
     from preprocessing import DataPreprocessor
     
-    print("=== CAR INSURANCE CLAIM - EXPLORATORY DATA ANALYSIS ===\n")
+    print("="*60)
+    print("EXPLORATORY DATA ANALYSIS - LAB SESSION METHODS")
+    print("Student: Sungmin Lee (1163957)")
+    print("="*60)
     
-    # Load data
+    # Load and preprocess data
     loader = DataLoader()
     data = loader.load_train_data()
     
@@ -507,41 +309,56 @@ def main():
         print("Could not load data. Please check data_loader.py")
         return
     
-    # Basic preprocessing for EDA
+    # Basic preprocessing
     preprocessor = DataPreprocessor()
     clean_data = preprocessor.handle_missing_values(data)
     clean_data = preprocessor.remove_duplicates(clean_data)
     
-    # Create EDA analyzer
+    # Initialize EDA analyzer
     eda = EDAAnalyzer()
     
-    # Identify target column (usually the last column in classification datasets)
-    # You may need to adjust this based on your actual dataset
-    target_column = clean_data.columns[-1]  # Assuming target is last column
-    print(f"Assumed target variable: {target_column}")
-    print("If this is incorrect, please specify the correct target column name.")
+    # Try to identify target column automatically
+    # Look for common target column names in insurance datasets
+    possible_targets = []
+    for col in clean_data.columns:
+        if any(keyword in col.lower() for keyword in ['claim', 'target', 'label', 'outcome', 'class']):
+            possible_targets.append(col)
     
-    # COMPREHENSIVE EDA ANALYSIS
+    if possible_targets:
+        target_column = possible_targets[0]
+    else:
+        target_column = clean_data.columns[-1]  # assume last column
     
-    # 1. Target Variable Analysis
-    eda.analyze_target_variable(clean_data, target_column)
+    print(f"Using '{target_column}' as target variable")
     
-    # 2. Numerical Features Analysis
-    eda.analyze_numerical_features(clean_data, target_column)
+    # Run EDA analysis following lab session structure
     
-    # 3. Categorical Features Analysis  
+    # 1. Basic data overview
+    eda.basic_data_overview(clean_data, target_column)
+    
+    # 2. Histograms for numerical features
+    eda.create_histograms(clean_data, target_column)
+    
+    # 3. Categorical feature analysis
     eda.analyze_categorical_features(clean_data, target_column)
     
-    # 4. Correlation Matrix
-    eda.create_correlation_matrix(clean_data, target_column)
+    # 4. Correlation analysis
+    eda.correlation_analysis(clean_data, target_column)
     
-    print("\n=== EDA ANALYSIS COMPLETED ===")
-    print("\nKey Insights for Model Development:")
-    print("1. Check for class imbalance in target variable")
-    print("2. Identify most predictive features from correlation analysis")
-    print("3. Consider feature engineering for high-cardinality categorical variables")
-    print("4. Address multicollinearity if detected")
-    print("5. Plan appropriate preprocessing based on feature distributions")
+    # 5. Scatter matrix
+    eda.scatter_matrix_analysis(clean_data, target_column)
+    
+    # 6. Feature vs target analysis
+    eda.feature_vs_target_analysis(clean_data, target_column)
+    
+    print(f"\n" + "="*60)
+    print("EDA ANALYSIS COMPLETED")
+    print("="*60)
+    print("Key findings from this analysis can help us understand:")
+    print("1. Which features have the strongest relationships with the target")
+    print("2. How features are distributed and if they need transformation")
+    print("3. Whether there are any obvious patterns in the data")
+    print("4. Which features might be most useful for building predictive models")
 
 
 if __name__ == "__main__":

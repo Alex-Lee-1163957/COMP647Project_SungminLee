@@ -7,19 +7,14 @@ Purpose: Clean and preprocess the car insurance claim dataset
 
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
-from sklearn.impute import SimpleImputer
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 class DataPreprocessor:
     """Class to handle data preprocessing tasks"""
     
     def __init__(self):
         """Initialize DataPreprocessor"""
-        self.label_encoders = {}
-        self.scaler = StandardScaler()
-        self.imputers = {}
+        pass
         
     def handle_missing_values(self, data, strategy='auto'):
         """
@@ -214,102 +209,64 @@ class DataPreprocessor:
         
         return processed_data
     
-    def encode_categorical_variables(self, data, target_column=None, encoding_method='auto'):
+    def encode_categorical_variables(self, data, target_column=None):
         """
-        Encode categorical variables for machine learning algorithms
+        Convert text categories to numbers using simple mapping
         
-        EXPLANATION: Machine learning algorithms require numerical input data.
-        Categorical variables (text/string data) must be converted to numbers.
-        Different encoding methods are suitable for different scenarios:
-        
-        - Label Encoding: Assigns integers (0,1,2...) to categories
-          * Good for: Ordinal data, binary categories, high cardinality
-          * Risk: May imply false ordering relationships
-        
-        - One-Hot Encoding: Creates binary columns for each category
-          * Good for: Nominal data, low cardinality (<10 categories)
-          * Risk: Curse of dimensionality with many categories
+        This uses basic pandas methods to convert categorical data to numerical.
+        For each text column, we create a simple mapping like:
+        'Category A' -> 1, 'Category B' -> 2, etc.
         
         Args:
             data (pd.DataFrame): Input dataset
             target_column (str): Name of target column to exclude from encoding
-            encoding_method (str): 'auto', 'label', 'onehot'
         Returns:
             pd.DataFrame: Dataset with encoded categorical variables
         """
-        print(f"\n=== ENCODING CATEGORICAL VARIABLES (Method: {encoding_method}) ===")
+        print(f"\n=== CONVERTING TEXT TO NUMBERS ===")
         
         processed_data = data.copy()
         
-        # Identify categorical columns (object/string type)
-        categorical_cols = processed_data.select_dtypes(include=['object']).columns
+        # Find text columns (object type)
+        text_cols = processed_data.select_dtypes(include=['object']).columns
         
-        # Exclude target variable from encoding (handle separately)
-        if target_column and target_column in categorical_cols:
-            categorical_cols = categorical_cols.drop(target_column)
+        # Don't change the target column
+        if target_column and target_column in text_cols:
+            text_cols = text_cols.drop(target_column)
         
-        print(f"Categorical columns to encode: {list(categorical_cols)}")
+        print(f"Text columns to convert: {list(text_cols)}")
         
-        for col in categorical_cols:
+        for col in text_cols:
             unique_values = processed_data[col].nunique()
             print(f"  {col}: {unique_values} unique values")
             
-            if encoding_method == 'auto':
-                # AUTOMATIC METHOD SELECTION based on cardinality
-                # This follows machine learning best practices:
-                
-                if unique_values == 2:
-                    # BINARY CATEGORICAL: Use label encoding
-                    # Example: Gender (Male/Female) -> (0/1)
-                    # Rationale: No ordering implied, memory efficient
-                    method = 'label'
-                elif unique_values <= 5:
-                    # LOW CARDINALITY: Use one-hot encoding
-                    # Example: Car_Type (Sedan, SUV, Hatchback) -> 3 binary columns
-                    # Rationale: Preserves category independence, manageable dimensions
-                    method = 'onehot'
-                else:
-                    # HIGH CARDINALITY: Use label encoding
-                    # Example: State (50 states) -> (0-49)
-                    # Rationale: Avoids creating too many columns (curse of dimensionality)
-                    method = 'label'
-            else:
-                method = encoding_method
+            # Create simple number mapping for each category
+            # Get unique categories and assign numbers 1, 2, 3, etc.
+            categories = processed_data[col].unique()
+            category_map = {}
+            for i, category in enumerate(categories):
+                category_map[category] = i + 1  # Start from 1, not 0
             
-            if method == 'label':
-                # LABEL ENCODING IMPLEMENTATION
-                # Maps categories to integers: {Category1: 0, Category2: 1, ...}
-                le = LabelEncoder()
-                processed_data[col] = le.fit_transform(processed_data[col])
-                
-                # Store encoder for potential future use (e.g., test data transformation)
-                self.label_encoders[col] = le
-                print(f"    Applied label encoding")
-                
-            elif method == 'onehot':
-                # ONE-HOT ENCODING IMPLEMENTATION
-                # Creates binary columns: Original_Category1, Original_Category2, etc.
-                # Each row has 1 in the relevant column, 0 in others
-                dummies = pd.get_dummies(processed_data[col], prefix=col)
-                
-                # Add new columns and remove original categorical column
-                processed_data = pd.concat([processed_data, dummies], axis=1)
-                processed_data = processed_data.drop(col, axis=1)
-                print(f"    Applied one-hot encoding, created {len(dummies.columns)} new columns")
+            # Apply the mapping to convert text to numbers
+            processed_data[col] = processed_data[col].map(category_map)
+            print(f"    Converted to numbers: {category_map}")
         
         return processed_data
     
-    def scale_features(self, data, target_column=None, method='standard'):
+    def normalize_features(self, data, target_column=None):
         """
-        Scale numerical features
+        Normalize numerical features using basic math
+        
+        This uses simple standardization: (value - mean) / standard_deviation
+        This makes all numerical features have mean=0 and std=1
+        
         Args:
             data (pd.DataFrame): Input dataset
             target_column (str): Name of target column to exclude from scaling
-            method (str): Scaling method ('standard', 'minmax', 'robust')
         Returns:
-            pd.DataFrame: Dataset with scaled features
+            pd.DataFrame: Dataset with normalized features
         """
-        print(f"\n=== SCALING FEATURES (Method: {method}) ===")
+        print(f"\n=== NORMALIZING NUMERICAL FEATURES ===")
         
         processed_data = data.copy()
         
@@ -318,23 +275,21 @@ class DataPreprocessor:
         if target_column and target_column in numerical_cols:
             numerical_cols = numerical_cols.drop(target_column)
         
-        print(f"Numerical columns to scale: {list(numerical_cols)}")
+        print(f"Numerical columns to normalize: {list(numerical_cols)}")
         
         if len(numerical_cols) > 0:
-            if method == 'standard':
-                scaler = StandardScaler()
-            elif method == 'minmax':
-                from sklearn.preprocessing import MinMaxScaler
-                scaler = MinMaxScaler()
-            elif method == 'robust':
-                from sklearn.preprocessing import RobustScaler
-                scaler = RobustScaler()
-            
-            processed_data[numerical_cols] = scaler.fit_transform(processed_data[numerical_cols])
-            self.scaler = scaler
-            print(f"Applied {method} scaling to {len(numerical_cols)} columns")
+            for col in numerical_cols:
+                # Simple standardization: (x - mean) / std
+                mean_val = processed_data[col].mean()
+                std_val = processed_data[col].std()
+                
+                if std_val > 0:  # Avoid division by zero
+                    processed_data[col] = (processed_data[col] - mean_val) / std_val
+                    print(f"  {col}: normalized (mean={mean_val:.2f}, std={std_val:.2f})")
+                else:
+                    print(f"  {col}: skipped (std=0)")
         else:
-            print("No numerical columns found to scale")
+            print("No numerical columns found to normalize")
         
         return processed_data
     
@@ -401,8 +356,8 @@ def main():
     target_col = processed_data.columns[-1] if len(processed_data.columns) > 0 else None
     processed_data = preprocessor.encode_categorical_variables(processed_data, target_col)
     
-    # 5. Scale features
-    processed_data = preprocessor.scale_features(processed_data, target_col)
+    # 5. Normalize features
+    processed_data = preprocessor.normalize_features(processed_data, target_col)
     
     # Generate summary
     preprocessor.get_preprocessing_summary(data, processed_data)

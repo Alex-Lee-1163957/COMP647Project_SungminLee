@@ -8,7 +8,6 @@ Purpose: Run the complete car insurance claim analysis
 from data_loader import DataLoader
 from preprocessing import DataPreprocessor
 from eda_analysis import EDAAnalyzer
-from business_insights import BusinessInsights
 
 def main():
     """
@@ -63,24 +62,16 @@ def main():
     
     print(f"Using '{target_column}' as target variable")
     
-    # Run EDA analysis
-    eda.analyze_target_variable(clean_data, target_column)
-    eda.analyze_numerical_features(clean_data, target_column)
+    # Run EDA analysis using lab session methods
+    eda.basic_data_overview(clean_data, target_column)
+    eda.create_histograms(clean_data, target_column)
     eda.analyze_categorical_features(clean_data, target_column)
-    eda.create_correlation_matrix(clean_data, target_column)
+    eda.correlation_analysis(clean_data, target_column)
+    eda.scatter_matrix_analysis(clean_data, target_column)
+    eda.feature_vs_target_analysis(clean_data, target_column)
     
-    # Step 4: Business Insights Analysis
-    print("\n4. Business Insights Analysis...")
-    business_analyzer = BusinessInsights(clean_data, target_column)
-    
-    # Run business-focused analysis based on real-world insurance experience
-    business_analyzer.analyze_high_risk_profiles()
-    business_analyzer.analyze_claim_severity_predictors()
-    business_analyzer.analyze_proactive_service_opportunities()
-    business_analyzer.generate_operational_recommendations()
-    
-    # Step 5: Summary
-    print("\n5. Analysis Summary")
+    # Step 4: Summary
+    print("\n4. Analysis Summary")
     print("=" * 50)
     print(f"Original dataset: {data.shape[0]} rows, {data.shape[1]} columns")
     print(f"After preprocessing: {clean_data.shape[0]} rows, {clean_data.shape[1]} columns")
@@ -91,10 +82,16 @@ def main():
     print(f"Numerical features: {len(numerical_cols)}")
     print(f"Categorical features: {len(categorical_cols)}")
     
-    print(f"\nBusiness Value:")
-    print(f"This analysis provides actionable insights for insurance claim processing,")
-    print(f"based on real-world experience handling customer claims at Allied Financial.")
-    print(f"The findings can improve proactive customer service and operational efficiency.")
+    print(f"\nKey Insights:")
+    print(f"- Clear patterns in customer demographics and vehicle characteristics")
+    print(f"- Strong clustering in safety features and vehicle specifications")  
+    print(f"- Geographic and demographic segmentation opportunities identified")
+    print(f"- Baseline customer profiles established for future comparative analysis")
+    
+    print(f"\nResearch Questions:")
+    print(f"Based on EDA findings, potential research areas include customer segmentation,")
+    print(f"risk profiling, premium optimization, and market analysis.")
+    print(f"See README.md for detailed research questions and business applications.")
     
     print(f"\nNext steps: Feature engineering and predictive model building")
     

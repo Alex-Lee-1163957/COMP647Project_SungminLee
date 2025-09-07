@@ -48,15 +48,15 @@ class DataLoader:
         try:
             if file_path.exists():
                 self.train_data = pd.read_csv(file_path)
-                print(f"✅ Training data loaded successfully from: {filename}")
-                print(f"   Shape: {self.train_data.shape}")
+                print(f"Training data loaded successfully from: {filename}")
+                print(f"Shape: {self.train_data.shape}")
                 return self.train_data
             else:
-                print(f"❌ File not found: {filename}")
+                print(f" File not found: {filename}")
                 return None
                 
         except Exception as e:
-            print(f"❌ Error loading {filename}: {e}")
+            print(f"Error loading {filename}: {e}")
             return None
     
     def load_test_data(self, filename="test.csv"):
@@ -72,15 +72,15 @@ class DataLoader:
         try:
             if file_path.exists():
                 self.test_data = pd.read_csv(file_path)
-                print(f"✅ Test data loaded successfully from: {filename}")
+                print(f"Test data loaded successfully from: {filename}")
                 print(f"   Shape: {self.test_data.shape}")
                 return self.test_data
             else:
-                print(f"❌ File not found: {filename}")
+                print(f"File not found: {filename}")
                 return None
                 
         except Exception as e:
-            print(f"❌ Error loading {filename}: {e}")
+            print(f"Error loading {filename}: {e}")
             return None
     
     def get_basic_info(self, data=None):
@@ -93,7 +93,7 @@ class DataLoader:
             data = self.train_data
             
         if data is None:
-            print("❌ No data available. Please load data first.")
+            print("No data available. Please load data first.")
             return
         
         print("\n=== DATASET BASIC INFORMATION ===")
@@ -122,7 +122,7 @@ class DataLoader:
             data = self.train_data
             
         if data is None:
-            print("❌ No data available. Please load data first.")
+            print("No data available. Please load data first.")
             return
         
         print("\n=== DATA QUALITY ASSESSMENT ===")
@@ -142,7 +142,7 @@ class DataLoader:
         if len(missing_df) > 0:
             print(missing_df.to_string(index=False))
         else:
-            print("✅ No missing values found!")
+            print("No missing values found!")
         
         # Duplicate rows
         duplicates = data.duplicated().sum()
@@ -171,7 +171,7 @@ class DataLoader:
             data = self.train_data
             
         if data is None:
-            print("❌ No data available. Please load data first.")
+            print("No data available. Please load data first.")
             return
         
         # Numerical columns

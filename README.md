@@ -16,16 +16,14 @@ Predict whether a car insurance policyholder will file a claim using machine lea
 **Files**: train.csv, test.csv, sample_submission.csv
 
 ## Project Files
-- `src/main.py` - Main analysis pipeline
-- `src/data_loader.py` - Data loading and basic inspection
-- `src/preprocessing.py` - Data preprocessing (missing values, outliers, encoding)
-- `src/eda_analysis.py` - Exploratory data analysis
-- `data/` - Dataset folder (add train.csv here)
+- `Assignment-2.py` - Single-file submission (data loading, preprocessing, EDA, insights)
+- `data/` - Dataset folder (add `train.csv` here)
 
 ## How to Run
-1. Download dataset from Kaggle and place train.csv in `data/` folder
+1. Download dataset from Kaggle and place `train.csv` in `data/` folder
 2. Install dependencies: `pip install -r requirements.txt`
-3. Run analysis: `python src/main.py`
+3. Run analysis: `python Assignment-2.py`
+4. Outputs: plots in `docs/plots/`, summary in `docs/insights.md`
 
 ## Analysis Steps
 1. **Data Loading** - Load and inspect the insurance dataset

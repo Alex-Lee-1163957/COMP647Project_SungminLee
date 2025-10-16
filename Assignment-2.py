@@ -1,15 +1,12 @@
 """
-Assignment-2 (COMP647) - Single File Submission
+Assignment-2 (COMP647)
 
 Student: Sungmin Lee (1163957)
 Repository: Alex-Lee-1163957/COMP647Project_SungminLee
 
 Purpose:
   Using a Kaggle dataset, perform the following tasks in a single Python file:
-  1) Data Preprocessing with clear in-code comments
-     - Cleaning the data
-     - Missing data imputation (methods discussed in class)
-     - Dealing with outliers
+    1) Data Preprocessing with clear in-code comments
   2) Exploratory Data Analysis (EDA)
      - Investigate correlations and potential relationships among features
   3) Provide insightful comments related to the features within the code
@@ -116,8 +113,8 @@ def handle_missing_values(data: pd.DataFrame, strategy: str = "auto") -> pd.Data
                 median_val = processed[col].median()
                 processed[col] = processed[col].fillna(median_val)
                 print(f"  - {col}: filled missing with median={median_val}")
-    # Insight (comment): Median/mode imputation minimizes information loss and reduces sensitivity to extremes
-    # Human-style insight
+    # Insight : Median/mode imputation minimizes information loss and reduces sensitivity to extremes
+
     after_missing = processed.isnull().sum().sum()
     print(
         f"[Insight] Finished handling missing values (remaining: {after_missing}). "
@@ -133,8 +130,7 @@ def remove_duplicates(data: pd.DataFrame) -> pd.DataFrame:
     processed = data.drop_duplicates()
     removed = before - len(processed)
     print(f"Removed {removed} duplicate rows")
-    # Insight (comment): Removing duplicates prevents overweighting repeated samples in analysis/modeling
-    # Human-style insight
+    # Insight: Removing duplicates prevents overweighting repeated samples in analysis/modeling
     if removed > 0:
         print("[Insight] Removed duplicate rows to prevent the same samples from overweighting the model.")
     else:
@@ -165,8 +161,8 @@ def detect_outliers_iqr(data: pd.DataFrame) -> Dict[str, Dict[str, float]]:
             "percentage": (count / len(data) * 100.0) if len(data) else 0.0,
         }
         print(f"  - {col}: {count} outliers ({outlier_info[col]['percentage']:.1f}%)")
-    # Insight (comment): Identify columns with many outliers to decide capping/removal strategies
-    # Human-style insight
+    # Insight: Identify columns with many outliers to decide capping/removal strategies
+
     flagged = {c: info for c, info in outlier_info.items() if info["count"] > 0}
     if flagged:
         top = sorted(flagged.items(), key=lambda x: x[1]["percentage"], reverse=True)[:3]
@@ -201,7 +197,7 @@ def handle_outliers(data: pd.DataFrame, outlier_info: Dict[str, Dict[str, float]
     if strategy == "remove":
         print(f"  Final shape after removal: {processed.shape}")
     # Insight (comment): Capping at IQR bounds reduces extreme influence without dropping rows
-    # Human-style insight
+
     if strategy == "cap":
         print("[Insight] Capped values at IQR bounds to reduce extreme influence, smoothing tails without losing samples.")
     return processed
@@ -225,7 +221,6 @@ def encode_categorical_variables(data: pd.DataFrame, target_column: Optional[str
         processed[col] = processed[col].map(mapping)
         print(f"  - {col}: {len(mapping)} categories encoded")
     # Insight (comment): Simple label mapping enables correlation and baseline models without heavy encoders
-    # Human-style insight
     print("[Insight] Converted categorical variables using label mapping; this simple encoding is sufficient for correlations and baseline modeling.")
     return processed
 
@@ -250,7 +245,6 @@ def normalize_numerical_features(data: pd.DataFrame, target_column: Optional[str
         else:
             print(f"  - {col}: skipped (std=0)")
     # Insight (comment): Standardization removes scale effects for fair comparison among features
-    # Human-style insight
     print("[Insight] Standardized numeric features so scale differences do not bias correlations or visual interpretation.")
     return processed
 
@@ -269,13 +263,9 @@ def create_histograms(data: pd.DataFrame, target_column: Optional[str], save_dir
     ax = data[num_cols].hist(bins=30, figsize=(15, 10))
     plt.suptitle("Distribution of Numerical Features", fontsize=16)
     plt.tight_layout()
-    if save_dir is not None:
-        out = save_dir / "histograms.png"
-        plt.savefig(out, dpi=150)
-        print(f"[EDA] Saved histograms to {out}")
+    # Class-level scope: show plots on screen (no file saving)
     plt.show()
     # Insight (comment): Highly skewed distributions may benefit from log-transform before modeling
-    # Human-style insight
     skew = data.select_dtypes(include=[np.number]).skew(numeric_only=True).sort_values(ascending=False)
     top_skew = skew.head(3)
     print("[Insight] Distribution summary (top skew):")
@@ -286,14 +276,8 @@ def create_histograms(data: pd.DataFrame, target_column: Optional[str], save_dir
 def analyze_categorical_features(
     data: pd.DataFrame,
     target_column: Optional[str],
-    save_dir: Optional[Path] = None,
-    max_plots_per_page: int = 8,
 ) -> None:
-    """Summarize top categories and visualize distributions for categorical features.
-
-    To avoid figures being cut off, large numbers of categorical plots are
-    paginated across multiple figures with constrained layout.
-    """
+    """Summarize categorical features with simple bar plots (class-level scope)."""
     cat_cols = data.select_dtypes(include=["object"]).columns
     if target_column in cat_cols:
         cat_cols = cat_cols.drop(target_column)
@@ -302,33 +286,27 @@ def analyze_categorical_features(
         return
     print(f"[EDA] Categorical features: {list(cat_cols)}")
 
-    # Paginate plots
-    pages = [cat_cols[i : i + max_plots_per_page] for i in range(0, len(cat_cols), max_plots_per_page)]
-    for page_idx, page_cols in enumerate(pages, start=1):
-        n = len(page_cols)
-        n_cols = 2 if n > 1 else 1
-        n_rows = (n + n_cols - 1) // n_cols
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(14, 3.6 * n_rows), constrained_layout=True)
-        axes_arr = np.array(axes).reshape(-1) if n_rows * n_cols > 1 else np.array([axes])
+    show_cols = cat_cols[:6]
+    n = len(show_cols)
+    n_cols = min(2, n)
+    n_rows = (n + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(12, 4 * n_rows))
+    axes_arr = np.array(axes).reshape(-1) if n_rows * n_cols > 1 else np.array([axes])
 
-        for i, col in enumerate(page_cols):
-            vc = data[col].value_counts().head(10)
-            axes_arr[i].bar(vc.index.astype(str), vc.values)
-            axes_arr[i].set_title(f"{col} (Top 10)")
-            axes_arr[i].set_ylabel("Count")
-            axes_arr[i].tick_params(axis="x", rotation=35, labelsize=8)
+    for i, col in enumerate(show_cols):
+        vc = data[col].value_counts().head(10)
+        axes_arr[i].bar(vc.index.astype(str), vc.values)
+        axes_arr[i].set_title(f"{col} (Top 10)")
+        axes_arr[i].set_ylabel("Count")
+        axes_arr[i].tick_params(axis="x", rotation=35, labelsize=8)
 
-        # Remove any unused axes
-        for j in range(len(page_cols), len(axes_arr)):
-            fig.delaxes(axes_arr[j])
+    for j in range(len(show_cols), len(axes_arr)):
+        fig.delaxes(axes_arr[j])
 
-        if save_dir is not None:
-            out = save_dir / ("categorical_distributions_page_%02d.png" % page_idx)
-            fig.savefig(out, dpi=150, bbox_inches="tight")
-            print(f"[EDA] Saved categorical distributions (page {page_idx}) to {out}")
+    plt.tight_layout()
+    plt.show()
 
-        plt.show()
-    # Human-style insight: class imbalance & rare categories
+    # insight: class imbalance & rare categories
     for col in cat_cols:
         vc = data[col].value_counts(normalize=True)
         if not vc.empty:
@@ -341,7 +319,7 @@ def analyze_categorical_features(
             print(f"[Insight] '{col}' contains rare categories (freq=1). Beware of sparsity and leakage across folds.")
 
 
-def correlation_analysis(data: pd.DataFrame, target_column: Optional[str], save_dir: Optional[Path] = None) -> pd.DataFrame:
+def correlation_analysis(data: pd.DataFrame, target_column: Optional[str]) -> pd.DataFrame:
     """Compute and visualize correlation matrix for numerical features."""
     num_cols = data.select_dtypes(include=[np.number]).columns
     if len(num_cols) < 2:
@@ -362,56 +340,19 @@ def correlation_analysis(data: pd.DataFrame, target_column: Optional[str], save_
         for j in range(len(corr.columns)):
             plt.text(j, i, f"{corr.iloc[i, j]:.2f}", ha="center", va="center", color="black", fontsize=8)
     plt.tight_layout()
-    if save_dir is not None:
-        out = save_dir / "correlation_heatmap.png"
-        plt.savefig(out, dpi=150)
-        print(f"[EDA] Saved correlation heatmap to {out}")
-        # Save raw correlations for marker review
-        corr_out = save_dir / "correlation_matrix.csv"
-        corr.round(6).to_csv(corr_out)
-        print(f"[EDA] Saved correlation matrix CSV to {corr_out}")
     plt.show()
     # Insight (comment): Features with highest |corr| to target are promising predictors
-    # Human-style insight
     if target_column in corr.columns:
         tgt = corr[target_column].drop(labels=[target_column], errors="ignore").abs().sort_values(ascending=False)
         print("[Insight] Top 5 features most correlated with the target:")
         for feat, val in tgt.head(5).items():
             print(f"  - {feat}: |corr|={val:.3f}")
-    # Multicollinearity hint
-    high_pairs = []
-    cols = corr.columns
-    for i in range(len(cols)):
-        for j in range(i+1, len(cols)):
-            if abs(corr.iloc[i, j]) > 0.85:
-                high_pairs.append((cols[i], cols[j], corr.iloc[i, j]))
-    if high_pairs:
-        pair_msg = ", ".join([f"{a}-{b}({v:.2f})" for a,b,v in high_pairs[:3]])
-        # Insight (comment): Very high inter-feature correlation suggests potential multicollinearity
-        print(f"[Insight] Strongly correlated feature pairs detected → potential multicollinearity: {pair_msg}")
     return corr
 
 
-def scatter_matrix_analysis(data: pd.DataFrame, target_column: Optional[str], save_dir: Optional[Path] = None) -> None:
-    """Create a scatter matrix for up to 5 numerical features (incl. target if numeric)."""
-    num_cols = data.select_dtypes(include=[np.number]).columns.tolist()
-    features: List[str]
-    if target_column in num_cols:
-        features = [target_column] + [c for c in num_cols if c != target_column][:4]
-    else:
-        features = num_cols[:5]
-    if len(features) < 2:
-        print("[EDA] Not enough numerical features for scatter matrix.")
-        return
-    print(f"[EDA] Scatter matrix features: {features}")
-    scatter_matrix(data[features], figsize=(12, 10), alpha=0.6)
-    plt.suptitle("Scatter Matrix of Key Features", fontsize=16)
-    plt.tight_layout()
-    if save_dir is not None:
-        out = save_dir / "scatter_matrix.png"
-        plt.savefig(out, dpi=150)
-        print(f"[EDA] Saved scatter matrix to {out}")
-    plt.show()
+"""
+Note: scatter_matrix analysis removed for class-level simplification.
+"""
 
 
 def feature_vs_target_analysis(data: pd.DataFrame, target_column: str) -> None:
@@ -461,78 +402,15 @@ def print_research_questions_summary(target_column: str, corr: Optional[pd.DataF
     print("   - Evidence: Correlation heatmap and feature-vs-target summaries.")
 
 
-# ------------------------------
-# Insight markdown writer
-# ------------------------------
-def write_insights_markdown(
-    output_dir: Path,
-    dataset_shape: Tuple[int, int],
-    target_column: str,
-    corr: Optional[pd.DataFrame],
-) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    md = []
-    md.append("# Assignment-2 Insights\n")
-    md.append(f"- Dataset shape: {dataset_shape[0]} rows × {dataset_shape[1]} columns\n")
-    md.append(f"- Target: `{target_column}`\n")
-    md.append("\n## Key Takeaways\n")
-    md.append("- Missing values handled (mode/median); outliers capped via IQR.\n")
-    md.append("- Categorical imbalance and rare categories flagged for caution.\n")
-    if corr is not None and not corr.empty and target_column in corr.columns:
-        top = corr[target_column].drop(labels=[target_column], errors="ignore").abs().sort_values(ascending=False).head(5)
-        md.append("- Top correlations with target:\n")
-        for feat, val in top.items():
-            md.append(f"  - {feat}: |corr|={val:.3f}\n")
-    (output_dir / "insights.md").write_text("".join(md), encoding="utf-8")
-    print(f"[INSIGHTS] Wrote markdown to {(output_dir / 'insights.md').as_posix()}")
+"""
+Note: insights markdown generation removed for class-level simplification.
+"""
 
 
 
-# ------------------------------
-# Business insights (integrated)
-# ------------------------------
-def business_insights(data: pd.DataFrame, target_column: str) -> None:
-    """Lightweight, business-oriented summaries inspired by src/business_insights.py.
-
-    Prints high-level, human-readable takeaways useful for a non-technical audience.
-    """
-    print("\n=== Business Insights (Integrated) ===")
-
-    # Overall target rate (if numeric target like is_claim)
-    if target_column in data.columns and pd.api.types.is_numeric_dtype(data[target_column]):
-        try:
-            overall_rate = float(data[target_column].mean()) * 100.0
-            print(f"- Overall target mean: {overall_rate:.2f}%")
-        except Exception:
-            pass
-
-    # Age group example (only if an 'age' like column exists)
-    for age_col in ["age", "policyholder_age", "driver_age"]:
-        if age_col in data.columns and pd.api.types.is_numeric_dtype(data[age_col]):
-            try:
-                bins = [0, 25, 35, 50, 65, 120]
-                labels = ["Under25", "25-34", "35-49", "50-64", "65+"]
-                age_group = pd.cut(data[age_col], bins=bins, labels=labels)
-                summary = pd.DataFrame({
-                    "Customers": age_group.value_counts().reindex(labels, fill_value=0)
-                })
-                if target_column in data.columns and pd.api.types.is_numeric_dtype(data[target_column]):
-                    summary["TargetMean"] = data.groupby(age_group)[target_column].mean().reindex(labels)
-                print(f"- {age_col} grouped view:")
-                print(summary.round(3))
-            except Exception:
-                pass
-            break
-
-    # Simple vehicle-related segmentation example
-    veh_cols = [c for c in data.columns if any(k in c.lower() for k in ["vehicle", "car", "model", "make", "segment"])]
-    if veh_cols:
-        vc = veh_cols[0]
-        top = data[vc].value_counts().head(5)
-        print(f"- Top categories in '{vc}':")
-        print(top)
-
-    print("[Business Insight] Identifying high-risk (or priority) segments early enables proactive guidance and pre-prepared documents, reducing handling time and improving satisfaction.")
+"""
+Note: business insights section removed for class-level simplification.
+"""
 
 
 # Main entry point
@@ -560,27 +438,20 @@ def main() -> Optional[pd.DataFrame]:
     target_column = autodetect_target_column(data)
     print(f"[INFO] Using '{target_column}' as target variable")
 
-    # Step 1: Data Preprocessing
+    # Step 1: Data Preprocessing (class-level scope)
     # - Missing imputation (mode/median)
     # - Remove duplicates
-    # - Detect and handle outliers (IQR + capping)
+    # - Detect outliers (IQR) and report only (no capping)
     clean = handle_missing_values(data, strategy="auto")
     clean = remove_duplicates(clean)
     outlier_info = detect_outliers_iqr(clean)
-    clean = handle_outliers(clean, outlier_info, strategy="cap")
-
-    # Optional: encode categoricals and normalize numericals for downstream EDA
-    # (Keeps target untouched so its semantics are preserved.)
-    encoded = encode_categorical_variables(clean, target_column=target_column)
-    processed = normalize_numerical_features(encoded, target_column=target_column)
+    processed = clean
 
     # Step 2: EDA - Visual and quantitative analyses
-    out_dir = ensure_output_dirs()
     basic_overview(processed, target_column)
-    create_histograms(processed, target_column, save_dir=out_dir)
-    analyze_categorical_features(clean, target_column, save_dir=out_dir)  # use pre-encoding for readability
-    corr = correlation_analysis(processed, target_column, save_dir=out_dir)
-    scatter_matrix_analysis(processed, target_column, save_dir=out_dir)
+    create_histograms(processed, target_column)
+    analyze_categorical_features(clean, target_column)
+    corr = correlation_analysis(processed, target_column)
     feature_vs_target_analysis(processed, target_column)
 
     # Step 3: Summary & Research questions (with references to EDA outputs)
@@ -591,11 +462,7 @@ def main() -> Optional[pd.DataFrame]:
     print(f"Numerical features: {num_cols}, Categorical features: {cat_cols}")
     print_research_questions_summary(target_column, corr)
 
-    # Write concise insights markdown
-    write_insights_markdown(Path("docs"), processed.shape, target_column, corr)
-
-    # Run integrated business insights
-    business_insights(processed, target_column)
+    # Note: insights file generation and business insights removed for class-level scope
 
     print("\nNext Steps: Feature engineering and predictive modeling (beyond scope of A2)")
     return processed

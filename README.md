@@ -22,7 +22,16 @@ Predict whether a car insurance policyholder will file a claim using machine lea
 ## How to Run
 1. Download dataset from Kaggle and place `train.csv` in `data/` folder
 2. Install dependencies: `pip install -r requirements.txt`
-3. Run analysis: `python Assignment-2.py`
+3. Run A2 (EDA): `python Assignment-2.py`
+4. Run A3 (Modeling + XAI): `python Assignment-3.py`
+   - Outputs: metrics summary `docs/metrics_summary.txt`, plots in `docs/plots/`
+
+### XAI (Explainability)
+- We use three complementary methods to keep explanations simple and class-friendly:
+  - Logistic coefficients (direction/magnitude of linear effects)
+  - RandomForest feature_importances_ (quick global signal ranking)
+  - Permutation Importance on hold‑out (score drop when a feature is shuffled)
+- Additionally, we save 1–2 Partial Dependence Plots for the top features to show average effect shapes.
 4. Outputs: plots in `docs/plots/`, summary in `docs/insights.md`
 
 ## Analysis Steps

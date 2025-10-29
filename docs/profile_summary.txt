@@ -1,0 +1,37 @@
+Shape: (58592, 44)
+Target distribution (is_claim):
+  0: 54844 (93.603%)
+  1: 3748 (6.397%)
+
+Missing values (>0):
+  None
+
+Categorical cardinality:
+  policy_id: 58592 unique
+  area_cluster: 22 unique
+  segment: 6 unique
+  model: 11 unique
+  fuel_type: 3 unique
+  max_torque: 9 unique
+  max_power: 9 unique
+  engine_type: 11 unique
+  is_esc: 2 unique
+  is_adjustable_steering: 2 unique
+  is_tpms: 2 unique
+  is_parking_sensors: 2 unique
+  is_parking_camera: 2 unique
+  rear_brakes_type: 2 unique
+  transmission_type: 2 unique
+  steering_type: 3 unique
+  is_front_fog_lights: 2 unique
+  is_rear_window_wiper: 2 unique
+  is_rear_window_washer: 2 unique
+  is_rear_window_defogger: 2 unique
+  is_brake_assist: 2 unique
+  is_power_door_locks: 2 unique
+  is_central_locking: 2 unique
+  is_power_steering: 2 unique
+  is_driver_seat_height_adjustable: 2 unique
+  is_day_night_rear_view_mirror: 2 unique
+  is_ecw: 2 unique
+  is_speed_alert: 2 unique

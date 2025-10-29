@@ -1,0 +1,32 @@
+Assignment-3: Metric Summary
+============================
+
+Class imbalance (positive rate): 0.0640
+
+Why these metrics:
+- Accuracy is easy to read but can hide minority errors.
+- F1 balances precision/recall; good when positives are rare.
+- ROC-AUC reflects ranking quality; insensitive to threshold.
+
+Logistic (5-fold CV): acc=0.555±0.002, f1=0.145±0.004, auc=0.594±0.006
+DecisionTree (5-fold CV): acc=0.520±0.042, f1=0.142±0.004, auc=0.584±0.010
+RandomForest (5-fold CV): acc=0.674±0.019, f1=0.141±0.005, auc=0.588±0.009
+
+Hold-out (Logistic):
+acc=0.558, f1=0.136, auc=0.573
+Confusion matrix path: C:\Users\1991t\Documents\GitHub\COMP647Project_SungminLee\docs\plots\cm_logistic.png
+ROC curve path: C:\Users\1991t\Documents\GitHub\COMP647Project_SungminLee\docs\plots\roc_logistic.png
+
+How we avoid over/underfitting (per slides):
+- Cross‑validation: 5‑fold CV gives a more stable estimate than a single split.
+- Feature selection: SelectKBest(chi2, k=30) keeps only salient signals and reduces variance.
+- Regularization / constraints:
+  * Logistic: default L2 (max_iter with convergence check).
+  * DecisionTree: max_depth=8, min_samples_leaf=50 to curb memorization.
+  * RandomForest: capped depth (12) and reasonable tree count (200).
+- Class imbalance: class_weight='balanced' to avoid over‑predicting the majority.
+- Hold‑out sanity check: we report a final CM/ROC on an unseen split.
+
+Notes:
+- We purposely keep models compact and comments explicit for grading/interpretability.
+- Final choice should balance interpretability (LogReg/Tree) and stability (RF).

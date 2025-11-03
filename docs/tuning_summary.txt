@@ -1,0 +1,6 @@
+GridSearchCV (5-fold, scoring=F1) — Best Results
+===============================================
+
+Logistic: score=0.145, params={'clf__C': 0.1, 'clf__solver': 'lbfgs'}
+DecisionTree: score=0.145, params={'clf__max_depth': 5, 'clf__min_samples_leaf': 20}
+RandomForest: score=0.147, params={'clf__max_depth': 10, 'clf__max_features': 'log2', 'clf__n_estimators': 200}

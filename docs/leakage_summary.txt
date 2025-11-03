@@ -1,0 +1,26 @@
+Leakage Checks
+==============
+
+No suspicious categorical associations found at strict threshold.
+
+Single-feature high CV accuracy (>0.85):
+  - age_of_car: acc=0.936
+  - age_of_policyholder: acc=0.936
+  - population_density: acc=0.936
+  - make: acc=0.936
+  - airbags: acc=0.936
+  - displacement: acc=0.936
+  - cylinder: acc=0.936
+  - gear_box: acc=0.936
+  - turning_radius: acc=0.936
+  - length: acc=0.936
+  - width: acc=0.936
+  - height: acc=0.936
+  - gross_weight: acc=0.936
+  - ncap_rating: acc=0.936
+  - max_power_num: acc=0.936
+  - max_torque_num: acc=0.936
+  - power_to_weight: acc=0.936
+  - torque_per_litre: acc=0.936
+  - policy_tenure: acc=0.936
+

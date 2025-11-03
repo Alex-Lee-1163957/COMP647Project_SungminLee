@@ -12,7 +12,7 @@ from typing import Dict, Tuple
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split, GridSearchCV, learning_curve, validation_curve
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -23,8 +23,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.inspection import permutation_importance, PartialDependenceDisplay
 from sklearn.feature_selection import SelectKBest, chi2
 
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to avoid Tkinter warnings in scripts
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.stats import chi2_contingency
 
 
 def load_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -123,6 +126,24 @@ def cv_eval(model, X, y, cv=5) -> Dict[str, float]:
     if aucs:
         out.update({'auc_mean': float(np.mean(aucs)), 'auc_std': float(np.std(aucs))})
     return out
+
+
+def run_grid_search(name: str, pipe: Pipeline, param_grid: Dict[str, object], X: pd.DataFrame, y: np.ndarray,
+                    scoring: str = 'f1', cv_splits: int = 5, n_jobs: int = -1, verbose: int = 0):
+    """Run a small GridSearchCV on a given pipeline and print the best result.
+
+    Rationale:
+    - Adds principled hyperparameter selection beyond fixed defaults
+    - Uses 5-fold CV and F1 (binary) by default to respect imbalance concerns
+    - Keeps grids intentionally small to remain laptop-friendly
+    """
+    cv = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
+    gs = GridSearchCV(estimator=pipe, param_grid=param_grid, scoring=scoring, cv=cv,
+                      n_jobs=n_jobs, verbose=verbose, refit=True)
+    gs.fit(X, y)
+    print(f"\n[GridSearch] {name}")
+    print({"best_score": float(gs.best_score_), "best_params": gs.best_params_})
+    return gs.best_estimator_, float(gs.best_score_), gs.best_params_
 
 
 def get_selected_feature_names(pre: ColumnTransformer, selector: SelectKBest, df: pd.DataFrame, target: str) -> np.ndarray:
@@ -426,6 +447,92 @@ def main() -> None:
     res_rf = cv_eval(rforest, X, y, cv=5)
     print(res_rf)
 
+    # 4.5) Hyperparameter tuning (small grids, 5-fold CV, F1) — keeps runtime modest
+    print("\n[TUNING] Starting GridSearchCV (scoring=F1, 5-fold)")
+    logreg_grid = {
+        'clf__C': [0.1, 1.0, 10.0],
+        'clf__solver': ['lbfgs'],  # binary compatible, stable
+    }
+    dtree_grid = {
+        'clf__max_depth': [5, 8, 12],
+        'clf__min_samples_leaf': [20, 50],
+    }
+    rf_grid = {
+        'clf__n_estimators': [200, 400],
+        'clf__max_depth': [10, 12, 16],
+        'clf__max_features': ['sqrt', 'log2'],
+    }
+
+    best_log, best_log_score, best_log_params = run_grid_search(
+        name='Logistic', pipe=logreg, param_grid=logreg_grid, X=X, y=y, scoring='f1')
+    best_dt, best_dt_score, best_dt_params = run_grid_search(
+        name='DecisionTree', pipe=dtree, param_grid=dtree_grid, X=X, y=y, scoring='f1')
+    best_rf, best_rf_score, best_rf_params = run_grid_search(
+        name='RandomForest', pipe=rforest, param_grid=rf_grid, X=X, y=y, scoring='f1')
+
+    # Save a short tuning summary for the report (kept separate from metrics_summary)
+    tuning_path = docs_dir / 'tuning_summary.txt'
+    with open(tuning_path, 'w', encoding='utf-8') as f:
+        f.write('GridSearchCV (5-fold, scoring=F1) — Best Results\n')
+        f.write('===============================================\n\n')
+        f.write(f"Logistic: score={best_log_score:.3f}, params={best_log_params}\n")
+        f.write(f"DecisionTree: score={best_dt_score:.3f}, params={best_dt_params}\n")
+        f.write(f"RandomForest: score={best_rf_score:.3f}, params={best_rf_params}\n")
+    print(f"[SAVED] {tuning_path}")
+
+    # 4.6) Learning curve (best RF by default) — visual diagnosis of fit/generalization
+    plots_dir = Path(__file__).resolve().parent / 'docs' / 'plots'
+    plots_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        print("\n[PLOT] Learning curves (RandomForest, scoring=F1)")
+        sizes, tr_scores, va_scores = learning_curve(
+            best_rf, X, y, cv=5, n_jobs=-1, scoring='f1', train_sizes=np.linspace(0.1, 1.0, 8), random_state=42
+        )
+        tr_mean, tr_std = tr_scores.mean(axis=1), tr_scores.std(axis=1)
+        va_mean, va_std = va_scores.mean(axis=1), va_scores.std(axis=1)
+        plt.figure(figsize=(6, 4))
+        plt.plot(sizes, tr_mean, 'o-', color='tab:red', label='Train F1')
+        plt.plot(sizes, va_mean, 'o-', color='tab:green', label='CV F1')
+        plt.fill_between(sizes, tr_mean - tr_std, tr_mean + tr_std, alpha=0.15, color='tab:red')
+        plt.fill_between(sizes, va_mean - va_std, va_mean + va_std, alpha=0.15, color='tab:green')
+        plt.xlabel('Training size')
+        plt.ylabel('F1')
+        plt.title('Learning Curve - RandomForest (tuned)')
+        plt.legend()
+        plt.tight_layout()
+        lc_path = plots_dir / 'learning_curves_rf.png'
+        plt.savefig(lc_path, dpi=150)
+        plt.close()
+        print(f"[SAVED] {lc_path}")
+    except Exception as e:
+        print(f"[WARN] Learning curve skipped: {e}")
+
+    # 4.7) Validation curve (DecisionTree max_depth) — bias/variance trade-off view
+    try:
+        print("[PLOT] Validation curve (DecisionTree max_depth, scoring=F1)")
+        depths = np.arange(2, 17)
+        tr_v, va_v = validation_curve(
+            best_dt, X, y, param_name='clf__max_depth', param_range=depths, cv=5, scoring='f1', n_jobs=-1
+        )
+        tr_m, tr_s = tr_v.mean(axis=1), tr_v.std(axis=1)
+        va_m, va_s = va_v.mean(axis=1), va_v.std(axis=1)
+        plt.figure(figsize=(6, 4))
+        plt.plot(depths, tr_m, 'o-', color='tab:red', label='Train F1')
+        plt.plot(depths, va_m, 'o-', color='tab:green', label='CV F1')
+        plt.fill_between(depths, tr_m - tr_s, tr_m + tr_s, alpha=0.15, color='tab:red')
+        plt.fill_between(depths, va_m - va_s, va_m + va_s, alpha=0.15, color='tab:green')
+        plt.xlabel('max_depth')
+        plt.ylabel('F1')
+        plt.title('Validation Curve - DecisionTree (tuned base)')
+        plt.legend()
+        plt.tight_layout()
+        vc_path = plots_dir / 'validation_curve_dt_max_depth.png'
+        plt.savefig(vc_path, dpi=150)
+        plt.close()
+        print(f"[SAVED] {vc_path}")
+    except Exception as e:
+        print(f"[WARN] Validation curve skipped: {e}")
+
     # Hold-out evaluation + XAI (saved under docs/plots)
     out_dir = Path(__file__).resolve().parent / 'docs' / 'plots'
     hold = evaluate_holdout_and_xai(
@@ -436,6 +543,69 @@ def main() -> None:
         feature_df=fe,
         out_dir=out_dir,
     )
+
+    # 5) Leakage checks — category-target association & single-feature predictive power
+    print("\n[CHECK] Data leakage sanity checks")
+    leak_path = Path(__file__).resolve().parent / 'docs' / 'leakage_summary.txt'
+    try:
+        with open(leak_path, 'w', encoding='utf-8') as f:
+            f.write('Leakage Checks\n')
+            f.write('==============\n\n')
+            # 5.1) Strong categorical association with target (chi-square)
+            cat_cols = fe.select_dtypes(include=['object']).columns.tolist()
+            if target in cat_cols:
+                cat_cols.remove(target)
+            flagged = []
+            for col in cat_cols:
+                try:
+                    ct = pd.crosstab(fe[col].astype(str), fe[target].astype(int))
+                    if ct.shape[0] > 1 and ct.shape[1] > 1:
+                        chi2_stat, p, dof, exp = chi2_contingency(ct)
+                        n = ct.to_numpy().sum()
+                        r, c = ct.shape
+                        cramers_v = np.sqrt(chi2_stat / (n * (min(r - 1, c - 1) or 1)))
+                        if p < 1e-6 and cramers_v >= 0.5:
+                            flagged.append((col, p, cramers_v))
+                except Exception:
+                    continue
+            if flagged:
+                f.write('Potentially strong categorical associations (p<1e-6, V>=0.5):\n')
+                for col, p, v in sorted(flagged, key=lambda x: -x[2])[:10]:
+                    f.write(f"  - {col}: p={p:.2e}, CramersV={v:.3f}\n")
+                f.write('\n')
+            else:
+                f.write('No suspicious categorical associations found at strict threshold.\n\n')
+
+            # 5.2) Single-feature predictive power (DecisionTree depth=3)
+            num_cols = fe.select_dtypes(include=[np.number]).columns.tolist()
+            if target in num_cols:
+                num_cols.remove(target)
+            suspicious = []
+            dt_probe = DecisionTreeClassifier(max_depth=3, random_state=42)
+            skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+            for col in num_cols:
+                try:
+                    Xc = fe[[col]].values
+                    ys = fe[target].astype(int).values
+                    scores = []
+                    for tr, va in skf.split(Xc, ys):
+                        dt_probe.fit(Xc[tr], ys[tr])
+                        scores.append(dt_probe.score(Xc[va], ys[va]))
+                    m = float(np.mean(scores))
+                    if m > 0.85:
+                        suspicious.append((col, m))
+                except Exception:
+                    continue
+            if suspicious:
+                f.write('Single-feature high CV accuracy (>0.85):\n')
+                for col, m in sorted(suspicious, key=lambda x: -x[1])[:20]:
+                    f.write(f"  - {col}: acc={m:.3f}\n")
+                f.write('\n')
+            else:
+                f.write('No single numeric feature shows suspiciously high accuracy.\n')
+        print(f"[SAVED] {leak_path}")
+    except Exception as e:
+        print(f"[WARN] Leakage checks skipped: {e}")
 
     # Write a short, plain-English metric summary for the report
     write_metrics_summary(

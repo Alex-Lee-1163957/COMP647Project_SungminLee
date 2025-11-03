@@ -1,8 +1,8 @@
 """
 Assignment-3 (COMP647)
 
-
-
+This script builds simple ML pipelines (LogReg/Tree/RF) with class-friendly EDA/XAI.
+"""
 from __future__ import annotations
 
 import warnings
@@ -286,7 +286,7 @@ def write_metrics_summary(out_file: Path, y: np.ndarray, cv_log: Dict[str, float
     Rationale (slides):
     - Accuracy alone can be misleading under imbalance, so we also report F1.
     - ROC-AUC summarizes ranking ability and is standard for binary problems.
-    - We show 5-fold CV (mean±std) for stability and a single hold-out for a
+    - We show 5-fold CV (mean+/-std) for stability and a single hold-out for a
       realistic final check.
     """
     out_file.parent.mkdir(parents=True, exist_ok=True)
@@ -300,12 +300,12 @@ def write_metrics_summary(out_file: Path, y: np.ndarray, cv_log: Dict[str, float
         f.write("- F1 balances precision/recall; good when positives are rare.\n")
         f.write("- ROC-AUC reflects ranking quality; insensitive to threshold.\n\n")
         def dump_cv(name, cv):
-            f.write(f"{name} (5-fold CV): acc={cv.get('acc_mean'):.3f}±{cv.get('acc_std'):.3f}, ")
-            f.write(f"f1={cv.get('f1_mean'):.3f}±{cv.get('f1_std'):.3f}, ")
+            f.write(f"{name} (5-fold CV): acc={cv.get('acc_mean'):.3f}+/-{cv.get('acc_std'):.3f}, ")
+            f.write(f"f1={cv.get('f1_mean'):.3f}+/-{cv.get('f1_std'):.3f}, ")
             auc_mean = cv.get('auc_mean')
             auc_std = cv.get('auc_std')
             if auc_mean is not None:
-                f.write(f"auc={auc_mean:.3f}±{auc_std:.3f}")
+                f.write(f"auc={auc_mean:.3f}+/-{auc_std:.3f}")
             f.write("\n")
         dump_cv("Logistic", cv_log)
         dump_cv("DecisionTree", cv_dt)
@@ -316,14 +316,14 @@ def write_metrics_summary(out_file: Path, y: np.ndarray, cv_log: Dict[str, float
         f.write(f"Confusion matrix path: {lh['cm_path']}\n")
         f.write(f"ROC curve path: {lh['roc_path']}\n")
         f.write("\nHow we avoid over/underfitting (per slides):\n")
-        f.write("- Cross‑validation: 5‑fold CV gives a more stable estimate than a single split.\n")
+        f.write("- Cross-validation: 5-fold CV gives a more stable estimate than a single split.\n")
         f.write("- Feature selection: SelectKBest(chi2, k=30) keeps only salient signals and reduces variance.\n")
         f.write("- Regularization / constraints:\n")
         f.write("  * Logistic: default L2 (max_iter with convergence check).\n")
         f.write("  * DecisionTree: max_depth=8, min_samples_leaf=50 to curb memorization.\n")
         f.write("  * RandomForest: capped depth (12) and reasonable tree count (200).\n")
-        f.write("- Class imbalance: class_weight='balanced' to avoid over‑predicting the majority.\n")
-        f.write("- Hold‑out sanity check: we report a final CM/ROC on an unseen split.\n")
+        f.write("- Class imbalance: class_weight='balanced' to avoid over-predicting the majority.\n")
+        f.write("- Hold-out sanity check: we report a final CM/ROC on an unseen split.\n")
         f.write("\nNotes:\n")
         f.write("- We purposely keep models compact and comments explicit for grading/interpretability.\n")
         f.write("- Final choice should balance interpretability (LogReg/Tree) and stability (RF).\n")

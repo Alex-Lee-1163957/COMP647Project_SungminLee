@@ -1,19 +1,7 @@
 """
 Assignment-3 (COMP647)
 
-Goal (per slides):
-  1) Feature engineering & selection with clear, human-style comments
-  2) Train simple supervised models (classification) and justify choices
-  3) Evaluate with appropriate metrics and explain why they fit our case
-  4) Show how we avoid over/underfitting
-  5) Provide basic XAI to explain predictions (model-specific + model-agnostic)
 
-Note:
-- This file is intentionally structured and heavily commented (human tone).
-- Keep algorithms to class scope: Logistic Regression, Decision Tree, Random Forest.
-- Metrics: Accuracy, F1, ROC-AUC (class imbalance aware).
-- Validation: 5-fold cross-validation (mean ± std).
-"""
 
 from __future__ import annotations
 
